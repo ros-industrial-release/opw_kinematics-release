@@ -2,6 +2,14 @@
 Changelog for package opw_kinematics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2021-02-19)
+------------------
+* Vectorize using Eigen::Array and Eigen::Map
+* Add code coverage CI build
+* Clean CMakeLists.txt
+* Switch to using std::array versus raw pointer to array
+* Contributors: Levi Armstrong
+
 0.3.1 (2021-01-06)
 ------------------
 * Update to use initialize_code_coverage() macro
@@ -15,7 +23,7 @@ Changelog for package opw_kinematics
 * Increase version to 0.2.0
 * Add github actions
 * Add code coverage to targets
-* Add cmake_common_scripts
+* Add ros_industrial_cmake_boilerplate
 * Contributors: Levi Armstrong, Matthew Powelson
 
 0.1.0 (2020-02-06)

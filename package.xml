@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>opw_kinematics</name>
-  <version>0.3.1</version>
+  <version>0.4.0</version>
   <description>
     A simple, analytical inverse kinematic library for industrial robots with parallel bases and
     spherical wrists. Based on the paper "An Analytical Solution of the Inverse Kinematics Problem
@@ -16,7 +16,7 @@
   <license>Apache 2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
-  <build_depend>cmake_common_scripts</build_depend>
+  <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>eigen</depend>
   <test_depend>gtest</test_depend>
 
