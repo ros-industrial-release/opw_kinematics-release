@@ -2,11 +2,15 @@
 #define OPW_KINEMATICS_IMPL_H
 
 #include <cmath>
+#include <Eigen/Dense>
 
 template <typename T>
-void inverse(const Parameters<T>& params, const Transform<T>& pose, T* out) noexcept
+Solutions<T> inverse(const Parameters<T>& params, const Transform<T>& pose) noexcept
 {
   using Vector = Eigen::Matrix<T, 3, 1>;
+
+  // The container for solutions
+  Solutions<T> solutions;
 
   // Adjust to wrist center
   Vector c = pose.translation() - params.c4 * pose.linear() * Vector::UnitZ();
@@ -54,10 +58,10 @@ void inverse(const Parameters<T>& params, const Transform<T>& pose, T* out) noex
   T theta3_iv = -std::acos(tmp8 / tmp9) - std::atan2(params.a2, params.c3);
 
   // Now for the orientation part...
-  T s23[4];
-  T c23[4];
-  T sin1[4];
-  T cos1[4];
+  std::array<T, 4> s23;
+  std::array<T, 4> c23;
+  std::array<T, 4> sin1;
+  std::array<T, 4> cos1;
 
   sin1[0] = std::sin(theta1_i);
   sin1[1] = std::sin(theta1_i);
@@ -79,7 +83,7 @@ void inverse(const Parameters<T>& params, const Transform<T>& pose, T* out) noex
   c23[2] = std::cos(theta2_iii + theta3_iii);
   c23[3] = std::cos(theta2_iv + theta3_iv);
 
-  T m[4];
+  std::array<T, 4> m;
   m[0] = matrix(0, 2) * s23[0] * cos1[0] + matrix(1, 2) * s23[0] * sin1[0] + matrix(2, 2) * c23[0];
   m[1] = matrix(0, 2) * s23[1] * cos1[1] + matrix(1, 2) * s23[1] * sin1[1] + matrix(2, 2) * c23[1];
   m[2] = matrix(0, 2) * s23[2] * cos1[2] + matrix(1, 2) * s23[2] * sin1[2] + matrix(2, 2) * c23[2];
@@ -129,70 +133,39 @@ void inverse(const Parameters<T>& params, const Transform<T>& pose, T* out) noex
   T theta6_vii = theta6_iii - T(M_PI);
   T theta6_viii = theta6_iv - T(M_PI);
 
-  out[6 * 0 + 0] = (theta1_i + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 0 + 1] = (theta2_i + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 0 + 2] = (theta3_i + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 0 + 3] = (theta4_i + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 0 + 4] = (theta5_i + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 0 + 5] = (theta6_i + params.offsets[5]) * params.sign_corrections[5];
+  Eigen::Map<const Eigen::Array<T, 6, 1>> offsets(params.offsets.data());
+  Eigen::Array<T, 6, 1> signs;
+  signs[0] = params.sign_corrections[0];
+  signs[1] = params.sign_corrections[1];
+  signs[2] = params.sign_corrections[2];
+  signs[3] = params.sign_corrections[3];
+  signs[4] = params.sign_corrections[4];
+  signs[5] = params.sign_corrections[5];
 
-  out[6 * 1 + 0] = (theta1_i + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 1 + 1] = (theta2_ii + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 1 + 2] = (theta3_ii + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 1 + 3] = (theta4_ii + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 1 + 4] = (theta5_ii + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 1 + 5] = (theta6_ii + params.offsets[5]) * params.sign_corrections[5];
+  Eigen::Array<T, 6, 8> theta;
+  // clang-format off
+  theta << theta1_i, theta1_i,  theta1_ii,  theta1_ii, theta1_i, theta1_i,  theta1_ii,  theta1_ii,
+           theta2_i, theta2_ii, theta2_iii, theta2_iv, theta2_i, theta2_ii, theta2_iii, theta2_iv,
+           theta3_i, theta3_ii, theta3_iii, theta3_iv, theta3_i, theta3_ii, theta3_iii, theta3_iv,
+           theta4_i, theta4_ii, theta4_iii, theta4_iv, theta4_v, theta4_vi, theta4_vii, theta4_viii,
+           theta5_i, theta5_ii, theta5_iii, theta5_iv, theta5_v, theta5_vi, theta5_vii, theta5_viii,
+           theta6_i, theta6_ii, theta6_iii, theta6_iv, theta6_v, theta6_vi, theta6_vii, theta6_viii;
+  // clang-format on
 
-  out[6 * 2 + 0] = (theta1_ii + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 2 + 1] = (theta2_iii + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 2 + 2] = (theta3_iii + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 2 + 3] = (theta4_iii + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 2 + 4] = (theta5_iii + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 2 + 5] = (theta6_iii + params.offsets[5]) * params.sign_corrections[5];
+  // Perform the computation
+  Eigen::Map<Eigen::Array<T, 6, 8>> output(solutions[0].data());
+  output = (theta.colwise() + offsets).colwise() * signs;
 
-  out[6 * 3 + 0] = (theta1_ii + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 3 + 1] = (theta2_iv + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 3 + 2] = (theta3_iv + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 3 + 3] = (theta4_iv + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 3 + 4] = (theta5_iv + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 3 + 5] = (theta6_iv + params.offsets[5]) * params.sign_corrections[5];
-
-  out[6 * 4 + 0] = (theta1_i + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 4 + 1] = (theta2_i + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 4 + 2] = (theta3_i + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 4 + 3] = (theta4_v + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 4 + 4] = (theta5_v + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 4 + 5] = (theta6_v + params.offsets[5]) * params.sign_corrections[5];
-
-  out[6 * 5 + 0] = (theta1_i + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 5 + 1] = (theta2_ii + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 5 + 2] = (theta3_ii + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 5 + 3] = (theta4_vi + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 5 + 4] = (theta5_vi + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 5 + 5] = (theta6_vi + params.offsets[5]) * params.sign_corrections[5];
-
-  out[6 * 6 + 0] = (theta1_ii + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 6 + 1] = (theta2_iii + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 6 + 2] = (theta3_iii + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 6 + 3] = (theta4_vii + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 6 + 4] = (theta5_vii + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 6 + 5] = (theta6_vii + params.offsets[5]) * params.sign_corrections[5];
-
-  out[6 * 7 + 0] = (theta1_ii + params.offsets[0]) * params.sign_corrections[0];
-  out[6 * 7 + 1] = (theta2_iv + params.offsets[1]) * params.sign_corrections[1];
-  out[6 * 7 + 2] = (theta3_iv + params.offsets[2]) * params.sign_corrections[2];
-  out[6 * 7 + 3] = (theta4_viii + params.offsets[3]) * params.sign_corrections[3];
-  out[6 * 7 + 4] = (theta5_viii + params.offsets[4]) * params.sign_corrections[4];
-  out[6 * 7 + 5] = (theta6_viii + params.offsets[5]) * params.sign_corrections[5];
+  return solutions;
 }
 
 template <typename T>
-Transform<T> forward(const Parameters<T>& p, const T* qs) noexcept
+Transform<T> forward(const Parameters<T>& p, const std::array<T, 6>& qs) noexcept
 {
   using Matrix = Eigen::Matrix<T, 3, 3>;
   using Vector = Eigen::Matrix<T, 3, 1>;
 
-  T q[6];
+  std::array<T, 6> q;
   q[0] = qs[0] * p.sign_corrections[0] - p.offsets[0];
   q[1] = qs[1] * p.sign_corrections[1] - p.offsets[1];
   q[2] = qs[2] * p.sign_corrections[2] - p.offsets[2];
