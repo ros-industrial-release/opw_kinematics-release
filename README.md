@@ -1,3 +1,26 @@
+## opw_kinematics (melodic) - 0.4.4-1
+
+The packages in the `opw_kinematics` repository were released into the `melodic` distro by running `/usr/bin/bloom-release --rosdistro melodic --track melodic opw_kinematics` on `Thu, 02 Dec 2021 19:28:43 -0000`
+
+The `opw_kinematics` package was released.
+
+Version of package(s) in repository `opw_kinematics`:
+
+- upstream repository: https://github.com/Jmeyer1292/opw_kinematics.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `null`
+- new version: `0.4.4-1`
+
+Versions of tools used:
+
+- bloom version: `0.10.7`
+- catkin_pkg version: `0.4.24`
+- rosdep version: `0.21.0`
+- rosdistro version: `0.8.3`
+- vcstools version: `0.1.42`
+
+
 ## opw_kinematics (noetic) - 0.4.4-1
 
 The packages in the `opw_kinematics` repository were released into the `noetic` distro by running `/usr/bin/bloom-release --rosdistro noetic --track noetic opw_kinematics` on `Thu, 11 Nov 2021 14:19:06 -0000`
