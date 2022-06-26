@@ -1,29 +1,25 @@
-name:  Package-Windows-Build
+name: Windows-2019
 
 on:
   push:
-    tags:
-      - '*'
-
-  # allow manually starting this workflow
-  workflow_dispatch:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'
 
 env:
   VCPKG_PKGS: >-
     eigen3
 
 jobs:
-  NuGet:
+  windows_ci:
     name: Windows-2019
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
       with:
         path: workspace/src/opw_kinematics
-
-    - name: Create artifacts directory
-      run: |
-        mkdir artifacts
 
     - name: checkout-vcpkg
       uses: actions/checkout@v2
@@ -68,23 +64,12 @@ jobs:
       shell: cmd
       run: |
         vcs import --input "${{ github.workspace }}/workspace/src/opw_kinematics/dependencies.rosinstall" src/
-        colcon build --event-handlers console_direct+ --cmake-args -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DOPW_PACKAGE=ON
+        colcon build --event-handlers console_direct+ --cmake-args -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DOPW_ENABLE_TESTING=ON
         if %ERRORLEVEL% GEQ 1 exit 1
 
-    - name: Package
-      working-directory: workspace/build/opw_kinematics
+    - name: run-test
+      working-directory: workspace
+      shell: cmd
       run: |
-        cpack --config CPackConfig.cmake
-        cp ./*.nupkg ${{ github.workspace }}/artifacts
-        cp ./*.tar.xz ${{ github.workspace }}/artifacts
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: nuget_package
-        path: ${{ github.workspace }}/artifacts/*.nupkg
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: archive_package
-        path: ${{ github.workspace }}/artifacts/*.tar.xz
-
+        colcon test --event-handlers console_direct+ --return-code-on-test-failure
+        colcon test-result --verbos
